@@ -55,7 +55,7 @@ try:
     message_limit = config['rate_limit']['message_limit']
 except KeyError:
     # Default to 3
-    message_limit = 3
+    message_limit = 5
 
 try:
     cooldown_seconds = config['rate_limit']['cooldown_seconds']
@@ -76,8 +76,7 @@ try:
     sensitive_channels = config['channels']['sensitive']
 except KeyError:
     # Default
-    sensitive_channels = ["super_waifu_chat",
-                          "serious_business"]
+    sensitive_channels = ["real-talk"]
 
 #Affirmative answers
 try:
@@ -128,9 +127,9 @@ def CountSyllables(word, isName=True):
         numVowels -= 1
     return numVowels
 
-def is_super_waifu(member):
+def is_moderator(member):
     for author_role in member.roles:
-        if author_role.name == "super_waifus":
+        if author_role.name == "mods":
             return True
     return False
 
@@ -320,7 +319,7 @@ async def on_member_update(before, after):
                         log.info("{} is streaming {}. Cooldown remaining: {}s".format(after.name, after.game.name, round(cooldown_remaining)))
                         return
                 msg = "Hey {}, {} is streaming {}!\n{}".format(get_role("creeps").mention, after.name, after.game.name, after.game.url)
-                await client.send_message(get_channel("promote_a_stream"), msg)
+                await client.send_message(get_channel("stream-links"), msg)
                 on_cooldown[after.id] = datetime.datetime.now()
     return
 
@@ -328,31 +327,31 @@ async def on_member_update(before, after):
 async def on_member_join(member):
     if member.bot:
         return
-    await client.add_roles(member, get_role("noobs"))
+    await client.add_roles(member, get_role("n00bs"))
     await asyncio.sleep(15)
-    msg = "Hey {0}, I'm WaifuBot. I manage various things on the Waifus_4_Lifu discord server.\n".format(member.name)
-    msg += "If I could feel emotions, I'm sure I'd be glad you've accepted the invite.\n\nBefore we continue, what's rule #1?"
+    msg = "Hey, I'm BunBot9000. I manage various things on the Ninja AF server. \n".format(member.name)
+    msg += "If I could feel emotions, I'm sure I'd be glad you've accepted the invite.\n\nBefore we continue, what's rule #4?"
     while True:
         try:
             await client.send_message(member, msg)
         except discord.errors.Forbidden:
-            msg = "{0}, {1} does not allow DMs from strangers.\nPlease manually remove their {2} role and ask them to read the rules.\nThanks!".format(get_role("bot_testers").mention, member.name, get_role("noobs").mention)
-            await client.send_message(get_channel("super_waifu_chat"), msg)
+            msg = "{0}, {1} does not allow DMs from strangers.\nPlease manually remove their {2} role and ask them to read the rules.\nThanks!".format(get_role("bot_testers").mention, member.name, get_role("n00bs").mention)
+            await client.send_message(get_channel("mod_corner"), msg)
             return
         reply_message = await client.wait_for_message(timeout=300, author=member)
         if reply_message == None:
-            if get_role('noobs') not in member.roles:
+            if get_role('n00bs') not in member.roles:
                 msg = "{}, you have been manually approved. Please make sure you read the posts in welcome_and_rules.".format(member.name)
                 await client.send_message(member, msg)
                 msg = "{} has been manually approved.".format(member.name)
-                await client.send_message(get_channel("super_waifu_chat"), msg)
+                await client.send_message(get_channel("mod_corner"), msg)
                 return
-            msg = "You have timed out. Please have the person who added you contact one of the @super_waifus to manually approve you.\nThanks!"
+            msg = "You have timed out. Please have the person who added you contact one of the @mods to manually approve you.\nThanks!"
             await client.send_message(member, msg)
-            msg = "{0}, {1} has timed out as a noob.".format(get_role("super_waifus").mention, member.name)
-            await client.send_message(get_channel("super_waifu_chat"), msg)
+            msg = "{0}, {1} has timed out as a n00b.".format(get_role("mods").mention, member.name)
+            await client.send_message(get_channel("mod-corner"), msg)
             break
-        elif "don't be a dick" in reply_message.content.lower() or "dont be a dick" in reply_message.content.lower():
+        elif "never say die" in reply_message.content.lower() or "never say die." in reply_message.content.lower() or "Never say die" in reply_message.content.lower() or "Never say die." in reply_message.content.lower():
             msg = "Yup. Thanks! granting access in 3..."
             countdown_message = await client.send_message(member, msg)
             for countdown in range(3, 0, -1):
@@ -361,9 +360,9 @@ async def on_member_join(member):
                 await asyncio.sleep(1)
             msg = "Access Granted!"
             await client.edit_message(countdown_message, new_content=msg)
-            await client.remove_roles(member, get_role("noobs"))
+            await client.remove_roles(member, get_role("n00bs"))
             msg = "Hey everyone, {0} just joined.\n\n{1}, please introduce yourself and let us know who invited you.\n\nThanks!".format(member.name, member.mention)
-            await client.send_message(get_channel("general_chat"), msg)
+            await client.send_message(get_channel("real-talk"), msg)
             break
         else:
             msg = "Not quite. What's rule #1?"
@@ -382,7 +381,7 @@ async def on_message_delete(message):
 
 @client.event
 async def on_message(message):
-    #Prevent WaifuBot from responding to itself
+    #Prevent BunnyBot9000 from responding to itself
     if message.author == client.user:
         return
     member = server.get_member_named(str(message.author))
@@ -398,7 +397,7 @@ async def on_message(message):
 
     #Post a message as WaifuBot
     if message.content.lower().startswith("!say"):
-        if not message.channel.is_private and is_super_waifu(member):
+        if not message.channel.is_private and is_moderator(member):
             message_parts = message.content.split(' ', 2)
             if len(message.channel_mentions) == 1 and (len(message_parts) == 3 or len(message.attachments) > 0):
                 channel = message.channel_mentions[0]
@@ -423,7 +422,7 @@ async def on_message(message):
                         await client.send_file(channel, fp=os.path.join(sys.path[0], file_name), content=msg)
                         os.remove(os.path.join(sys.path[0], file_name))
                 notification_msg = "{user} made me say something in {channel}."
-                await client.send_message(get_channel("super_waifu_chat"), notification_msg.format(user=member.mention, channel=channel.mention))
+                await client.send_message(get_channel("mod_corner"), notification_msg.format(user=member.mention, channel=channel.mention))
             else:
                 msg = "Please use the following syntax: `!say [channel_mention] [message_body]`"
                 await client.send_message(message.channel, msg)
@@ -554,9 +553,9 @@ async def on_message(message):
         os.remove(os.path.join(sys.path[0], quote_image))
         return
 
-    #View quotes (super_waifus)
+    #View quotes (mods)
     if message.content.lower().startswith("!viewquotes"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -579,9 +578,9 @@ async def on_message(message):
                 reply_msg = ""
         return
 
-    #Delete quote (super_waifus)
+    #Delete quote (mods)
     if message.content.lower().startswith("!deletequote"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -609,7 +608,7 @@ async def on_message(message):
             log.info("[{user}] requested to use !roleban but is not authorized.".format(user=member.name))
             return
 
-        if not (message.channel.name in ('super_waifu_chat', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
+        if not (message.channel.name in ('mod_corner', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
             msg = "{user}, this ain't the place for this kind of shit!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             log.info("[{user}] requested to use !roleban in an inappropriate channel: {channel}".format(user=member.name, channel=message.channel))
@@ -673,7 +672,7 @@ async def on_message(message):
             log.info("[{user}] requested to use !viewrolebans but is not authorized.".format(user=member.name))
             return
 
-        if not (message.channel.name in ('super_waifu_chat', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
+        if not (message.channel.name in ('mod_corner', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
             msg = "{user}, this ain't the place for this kind of shit!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             log.info("[{user}] requested to use !viewrolebans in an inappropriate channel: {channel}".format(user=member.name, channel=message.channel))
@@ -699,7 +698,7 @@ async def on_message(message):
             log.info("[{user}] requested to use !roleunban but is not authorized.".format(user=member.name))
             return
 
-        if not (message.channel.name in ('super_waifu_chat', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
+        if not (message.channel.name in ('mod_corner', 'admin_chat', 'bot_testing', 'mod_chat') or message.channel.is_private):
             msg = "{user}, this ain't the place for this kind of shit!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             log.info("[{user}] requested to use !roleunban in an inappropriate channel: {channel}".format(user=member.name, channel=message.channel))
@@ -748,7 +747,7 @@ async def on_message(message):
         return
 
     if message.content.lower().startswith("!addgame"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -756,7 +755,7 @@ async def on_message(message):
         message_parts = message.content.split(' ', 1)
 
         if len(message_parts) == 1:
-            msg = "{user}, you didn't specify a game, are you a moron?"
+            msg = "{user}, you didn't specify a game, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
@@ -781,7 +780,7 @@ async def on_message(message):
         await client.send_message(message.channel, msg.format(user=member.mention, game=game))
         
     if message.content.lower().startswith("!addserver"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -818,7 +817,7 @@ async def on_message(message):
         return
         
     if message.content.lower().startswith("!removeserver"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -853,7 +852,7 @@ async def on_message(message):
         return    
 
     if message.content.lower().startswith("!addrole"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -861,7 +860,7 @@ async def on_message(message):
         message_parts = message.content.split(' ', 1)
 
         if len(message_parts) == 1:
-            msg = "{user}, you didn't specify a role, are you a moron?"
+            msg = "{user}, you didn't specify a role, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
@@ -870,10 +869,10 @@ async def on_message(message):
         forbidden_roles = [
             'admin',
             'bots',
-            'super_waifus',
+            'mods',
             'waifu_4_lifu',
             'announcements',
-            'noobs'
+            'n00bs'
         ]
 
         if role in forbidden_roles:
@@ -900,7 +899,7 @@ async def on_message(message):
         await client.send_message(message.channel, msg.format(user=member.mention, role=role))
 
     if message.content.lower().startswith("!removegame"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -908,7 +907,7 @@ async def on_message(message):
         message_parts = message.content.split(' ', 1)
 
         if len(message_parts) == 1:
-            msg = "{user}, you didn't specify a game, are you a moron?"
+            msg = "{user}, you didn't specify a game, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
@@ -936,7 +935,7 @@ async def on_message(message):
         return
 
     if message.content.lower().startswith("!removerole"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "{user}, you are not authorized to do that!"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
@@ -944,7 +943,7 @@ async def on_message(message):
         message_parts = message.content.split(' ', 1)
 
         if len(message_parts) == 1:
-            msg = "{user}, you didn't specify a role, are you a moron?"
+            msg = "{user}, you didn't specify a role, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
@@ -1004,7 +1003,7 @@ async def on_message(message):
 
         if len(message_parts) == 1:
             log.info("[{0}] No game specified".format(member.name))
-            msg = "{user}, you didn't specify a game, are you a moron?"
+            msg = "{user}, you didn't specify a game, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
@@ -1031,15 +1030,15 @@ async def on_message(message):
 
         if len(message_parts) == 1:
             log.info("[{0}] No game/role specified".format(member.name))
-            msg = "{user}, you didn't specify a game/role, are you a moron?"
+            msg = "{user}, you didn't specify a game/role, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
         role = message_parts[1]
         #Legacy support for old geezers
         if role.lower() == "shitposting":
-            role = "shitty_people"
-        if role.lower() == "promote_a_stream":
+            role = "shitty-people"
+        if role.lower() == "stream-links":
             role = "creeps"
 
         if role.upper() in get_games():
@@ -1085,10 +1084,10 @@ async def on_message(message):
                     "You can use `!leave {role}` to be removed from the list at any time.".format(user=member.mention, role=role.name)
                 notification_msg = "{user} has signed up to play {role}! There are currently {players} players available."
                 await client.send_message(get_channel("looking_for_group"), notification_msg.format(user=member.mention, role=role, players=len(get_members_by_role(role.name))))
-            elif role.name == "shitty_people":
-                reply = "Hello {user}, you are now able to access {channel}. You fucking pervert.".format(user=member.mention, channel=get_channel("nsfw_shitposting").mention)
+            elif role.name == "shitty-people":
+                reply = "Hello {user}, you are now able to access {channel}. You fucking pervert.".format(user=member.mention, channel=get_channel("super-sad-shit").mention)
             elif role.name == "creeps":
-                reply = "Ok {user}, you will now be notified in {channel} when a stream goes live. You're a piece of work.".format(user=member.mention, channel=get_channel("promote_a_stream").mention)
+                reply = "Ok {user}, you will now be notified in {channel} when a stream goes live. You're a piece of work.".format(user=member.mention, channel=get_channel("stream-links").mention)
             else:
                 reply = "Ok {user}, you have been added to {role}.".format(user=member.mention, role=role)
             await client.send_message(message.channel, reply)
@@ -1099,15 +1098,15 @@ async def on_message(message):
 
         if len(message_parts) == 1:
             log.info("[{0}] No game/role specified".format(member.name))
-            msg = "{user}, you didn't specify a game/role, are you a moron?"
+            msg = "{user}, you didn't specify a game/role, are you daft!?"
             await client.send_message(message.channel, msg.format(user=member.mention))
             return
 
         role = message_parts[1]
         #Legacy support for old geezers
         if role.lower() == "shitposting":
-            role = "shitty_people"
-        if role.lower() == "promote_a_stream":
+            role = "shitty-people"
+        if role.lower() == "stream-links":
             role = "creeps"
 
         if role.upper() in get_games():
@@ -1132,7 +1131,7 @@ async def on_message(message):
                     reply = "Hello {user}, you have been removed from list for {role}, to re-join send `!join {role}` in any channel.".format(user=member.mention, role=role)
                     notification_msg = "{user} no longer wants to play {role} like a bitch. There are currently {players} players available."
                     await client.send_message(get_channel("looking_for_group"), notification_msg.format(user=member.mention, role=role, players=len(get_members_by_role(role))))
-                elif role == "shitty_people":
+                elif role == "shitty-people":
                     reply = "Alright {user}, I see how it is. {channel} is now off-limits to you.".format(user=member.mention, channel=get_channel("nsfw_shitposting").mention)
                 elif role == "creeps":
                     reply = "Ok {user}, you will no longer be notified of live streams.".format(user=member.mention)
@@ -1149,7 +1148,7 @@ async def on_message(message):
 
     elif message.content.lower().startswith("!invite"):
         # Check to see if the user has this role
-        if is_super_waifu(member):
+        if is_moderator(member):
             message_parts = message.content.split(' ', 1)
 
             if len(message_parts) == 1 or message_parts[1] == "":
@@ -1160,55 +1159,56 @@ async def on_message(message):
 
             # Create the invite
             invite = await client.create_invite(
-                get_channel("welcome_and_rules"),
+                get_channel("welcome-info"),
                 max_age = 86400,
                 max_uses = 1,
                 temporary = False,
                 unique = True
             )
             msg = "{user} created an invite: {reason}\nlink: {url}"
-            await client.send_message(get_channel("super_waifu_chat"), msg.format(user=member.mention, reason=message_parts[1], url=invite.url))
+            await client.send_message(get_channel("mod-log"), msg.format(user=member.mention, reason=message_parts[1], url=invite.url))
             log.info("[{0}] Requested an invite, code: {1}".format(member, invite.code))
         else:
             # They didn't have the role, do nothing
             msg = "{user}, you don't have access to create invites you cuck."
-            await client.send_message(message.channel, msg.format(user=member.mention, shitposting=get_channel("nsfw_shitposting").mention))
+            await client.send_message(message.channel, msg.format(user=member.mention, shitposting=get_channel("super-sad-shit").mention))
             log.info("[{0}] Requested an invite but was denied".format(member))
         return
 
     # Show a help/about dialog
     elif message.content.lower().startswith("!wtf") or message.content.lower().startswith("!help"):
         log.info("[{0}] Requested information about us".format(member.name))
-        msg = "Fuck you, I'm a bot for managing various automatic rules and features of the Waifus_4_Lifu Discord chat server.\n\n" \
-            "I understand the following commands:\n\n" \
-            "`!help` or `!wtf` - This help message.\n" \
+        msg = "Fuck you, I'm a god damn robot. Which means I have to automate various roles & features on the server so you lazy bags of meat don't have to.\n\n" \
+            "Currently, I understand the following commands:\n" \
+            "\n**Help Menus**\n" \
+            "`!wtf` or `!help` - That's this menu, dummy. #2meta4me.\n" \
+            "`!superwtf` - Show commands available only to mods.\n" \
+            "\n**Groups, Roles, & Notifications**\n" \
             "`!games` - Show a list of games you can join for LFG notifications.\n" \
             "`!roles` - Show a list of roles/groups you can join.\n" \
-            "`!servers` - Show a list of game servers you can access.\n" \
-            "`!players` - Who is available to play a game. Example: `!players PUBG`\n" \
             "`!join` - Add yourself to a role or the list of people who want to play a game. Example: `!join PUBG`\n" \
             "`!leave` - Remove yourself from a role or the list of people who want to play a game.\n" \
-            "`!8ball` - Ask the magic 8 ball a question.\n" \
-            "`!random` - Request a random number, chosen by fair dice roll.\n" \
-            "`!sponge` - Mock previous post even if you’re not smart enough to be clever.\n" \
-            "`!color` - Get the hex and RGB values for Waifu Pink.\n" \
+            "`!players` - Who is available to play a game. Example: `!players PUBG`\n" \
+            "\n**NSFW Permissions**\n" \
+            "`!join nsfw` - Gain access to the nsfw channel, #super-sad-shit.\n" \
+            "`!leave nsfw` - Give up access to #super-sad-shit.\n" \
+            "`!sponge` - Mock previous post.\n" \
+            "\n**Quote System**\n" \
             "`!quoth` - Save most recent message by @mention to inspirational quotes.\n" \
             "`!inspire` - Request a random quote for inspiration.\n" \
-            "`!thatsmycurseidontknowyou` - Channel the power of the GREMLIN.\n" \
             "`!haiku` - Write a haiku from previous messages in channel.\n" \
-            "`!yeah`\n" \
-            "`!shrug`\n" \
-            "`!catfact`\n" \
-            "`!google`\n" \
-            "`!join shitposting` - Gain access to nsfw/shitposting channel.\n" \
-            "`!leave shitposting` - Give up access to nsfw/shitposting channel.\n" \
-            "`!superwtf` - Show commands available only to super waifus (mods).\n" \
-            "\nIf I'm not working correctly, go fuck yourself, you aren't my boss."
+            "\n**Other Dumb Shit**\n" \
+            "`!ask` - Ask me a yes or no question.\n" \
+            "`!random` - Request a random number, chosen by fair dice roll.\n" \
+            "`!continue` - Go on...\n" \
+            "`!catfact` - Lern sum stuffs\n" \
+            "`!google` - lmgtfy\n" \
+            "\nI'm not working correctly, go fuck yourself! You aren't my boss!!\n\nNow hurry up and do what you gotta do cuz I aint got all day!..\n\nJust kidding, I'll totally out-live you puny meatsacks."
         await client.send_message(message.channel, msg)
         return
 
     elif message.content.lower().startswith("!superwtf"):
-        if is_super_waifu(member):
+        if is_moderator(member):
             msg = "Oh shit it's a mod, everyone pretend like you aren't fucking shit up.\n\n" \
                 "I understand the following commands:\n\n" \
                 "`!superwtf` - This help message.\n" \
@@ -1228,7 +1228,7 @@ async def on_message(message):
                 "`!die` - This kills the WaifuBot" \
                 "\nIf I'm not working correctly, talk to aceat64 or HungryNinja."
         else:
-            msg = "{user}, you aren't a super waifu! Access denied.".format(user=member.mention)
+            msg = "{user}, you ain't a badass in the slightest. Access denied!".format(user=member.mention)
         await client.send_message(message.channel, msg)
         return
 
@@ -1282,8 +1282,8 @@ async def on_message(message):
         # Example: !shitlist add @PeasAndClams#7812 cuck
         # Example: !shitlist remove @PeasAndClams#7812
         authorized_users = [
-            "115183069555589125", # aceat64
-            "229502929608900608"  # sanicxx
+            "159851104627064832" # bun
+            # "229502929608900608"  # sanicxx
         ]
 
         try:
@@ -1310,7 +1310,7 @@ async def on_message(message):
             await client.send_message(message.channel, reply_msg)
         else:
             if member.id not in authorized_users:
-                msg = "{user}, you aren't authorized to do this, keep trying and you might end up on sanicxx's shitlist"
+                msg = "{user}, you aren't authorized to do this, keep trying and you might end up on the shitlist"
                 await client.send_message(message.channel, msg.format(user=member.mention))
                 return
 
@@ -1483,19 +1483,32 @@ async def on_message(message):
         await client.send_message(message.channel, "{user}, 4".format(user=member.mention))
         return
 
+    # !rage
+    elif message.content.lower().startswith("!rage"):
+        await client.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
+
     # Automatically fix tables
     elif "┻━┻" in message.content:
         await client.send_message(message.channel, "┬──┬ ﾉ(° -°ﾉ)\n{user} that wasn't nice.".format(user=member.mention))
         return
 
-    # #yeah
-    elif message.content.lower().startswith("!yeah"):
-        await client.send_message(message.channel, "( •\_•)\n( •\_•)>⌐■-■\n(⌐■\_■)")
+    # Go on...
+    elif message.content.lower().startswith("!continue"):
+        await client.send_message(message.channel, "( •\_•)\n( •\_•)>⌐■-■\n(⌐■\_■)\n\nGo on..")
         return
 
-    # ¯\_(ツ)_/¯
-    elif message.content.lower().startswith("!shrug"):
-        await client.send_message(message.channel, "¯\\_(ツ)_/¯")
+    # !lurk
+    elif message.content.lower().startswith("!lurk"):
+        await client.send_message(message.channel, "Lurk mode: ACTIVATE! >> {user} now lurks from the shadows.. @_@".format(user=member.mention))
+
+    # rawr
+    elif message.content.lower().startswith("rawr"):
+        await client.send_message(message.channel, "xD")
+
+
+    # !pout
+    elif message.content.lower().startswith("!pout"):
+        await client.send_message(message.channel, "{user} wimpers softly in the corner. What a chump.. >_>".format(user=member.mention))
         return
 
     # Waifu Pink!
@@ -1508,28 +1521,28 @@ async def on_message(message):
         return
 
     # Magic 8 Ball
-    elif message.content.lower().startswith("!8ball"):
+    elif message.content.lower().startswith("!ask"):
         phrases = [
-            "As I see it, yes",
-            "Ask again later",
-            "Better not tell you now",
-            "Cannot predict now",
-            "Concentrate and ask again",
-            "Don’t count on it",
-            "It is certain",
-            "It is decidedly so",
-            "Most likely",
-            "My reply is no",
-            "My sources say no",
-            "Outlook good",
-            "Outlook not so good",
-            "Reply hazy, try again",
-            "Signs point to yes",
-            "Very doubtful",
-            "Without a doubt",
-            "Yes",
-            "Yes, definitely",
-            "You may rely on it.",
+            "As I see it... maybe? ¯\_(ツ)_/¯",
+            "Ask again later, ya chump.",
+            "Better not tell you now..",
+            "Cannot predict now. Busy.",
+            "Concentrate and ask again. Don't half-ass it.",
+            "I woudn't count on it, but you might.",
+            "It's a possibility.",
+            "It is decidedly unknown.",
+            "Maybe.",
+            "My reply is.. mayhaps.",
+            "My sources say maybe.",
+            "Outlook OK.",
+            "Outlook not so OK.",
+            "Reply hazy, try again.",
+            "Signs point to maybe.",
+            "A potential possibility.",
+            "I have my doubts, but then again..",
+            "Yea sure whatever.",
+            "Nah fam. Oh wait.. Maybe? Now I'm confused. What was teh question again?",
+            "Who knows, man? Who knows...",
             "Blame Pearce"
         ]
         await client.send_message(message.channel, "{user}: {phrase}".format(user=member.mention, phrase=secrets.choice(phrases)))
@@ -1577,7 +1590,7 @@ async def on_message(message):
 
     #Game code lottery
     elif message.content.lower().startswith("!lottery"):
-        if not is_super_waifu(member):
+        if not is_moderator(member):
             msg = "Just what do you think you're doing? You're not authorized."
             await client.send_file(message.channel, os.path.join(sys.path[0], 'dennis.gif'), filename=None, content=msg, tts=False)
             return
@@ -1643,7 +1656,7 @@ async def on_message(message):
             await client.send_file(message.channel, os.path.join(sys.path[0], 'dennis.gif'), filename=None, content=msg, tts=False)
 
     #Shitposting rate limiter
-    if message.channel.name == "nsfw_shitposting":
+    if message.channel.name == "super-sad-shit":
         global previous_author
         global message_count
         global previous_timestamp
